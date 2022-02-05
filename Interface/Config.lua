@@ -1,6 +1,6 @@
 
 -- modules:
-LOAD_LOGINSCENE_TOOL = true
+LOAD_LOGINSCENE_TOOL = false
 LOAD_REALMLIST_CHANGER = true
 
 -- miscellanous:
