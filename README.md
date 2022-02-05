@@ -19,7 +19,7 @@ I'll post Mordred's original How-to once I figure out how I can do that, GitHub 
 
 In the meantime you can check it out here:
 
-https://web.archive.org/web/20200812151651/http://www.modcraft.io/index.php?topic=8694
+https://web.archive.org/web/20151231072109/http://modcraft.superparanoid.de/viewtopic.php?f=7&t=8694
 
 Account passwords can be saved, they will be put into the /wtf/config.wtf file, into the accountName CVAR.
 Realmlists saved will also be put there separated by the separators defined in their respective lua files.
