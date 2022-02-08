@@ -135,15 +135,15 @@ function AccountLogin_OnShow(self)
 	local savedString = ''
 	
 	savedString = GetCVar(REALMLIST_STORE_VARS[1])
-	strlen = 0
+	_strlen = 0
 	if savedString ~= nil and savedString ~= "" then
-		strlen = string.match(savedString, "[0-9]*")
-		linecount = 1 + (strlen / 240)
+		_strlen = string.match(savedString, "[0-9]*")
+		linecount = 1 + (_strlen / 240)
 		for i=2,linecount do
 			savedString = savedString..GetCVar(REALMLIST_STORE_VARS[i])
 		end
 	end
-	savedString = string.gsub(savedString, strlen,"")
+	savedString = string.gsub(savedString, _strlen,"")
 	
 	if ENABLE_WOW_LOGO then
 		AccountLoginLogo:Show();
