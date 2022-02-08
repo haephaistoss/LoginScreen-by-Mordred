@@ -6,6 +6,12 @@ MAX_PIN_LENGTH = 10;
 ACCOUNT_SEPARATOR = "#&|&#";
 DATA_SEPARATOR = "#|&|#";
 
+REALMLIST_STORE_VARS = { "realmListbn", "accountList", "accountListSSO" }
+
+function string.insert(str1, str2, pos)
+    return str1:sub(1,pos)..str2..str1:sub(pos+1)
+end
+
 function string_explode(str, div)
 	assert(type(str) == "string" and type(div) == "string", "invalid arguments")
 	local o = {}
@@ -22,8 +28,6 @@ end
 
 function SaveAccountString(accname, pwstring)
 	local final = "";
-	local final1 = "";
-	local final2 = "";
 	
 	if accname then
 		final = final..accname;
@@ -35,38 +39,59 @@ function SaveAccountString(accname, pwstring)
 		final = final..pwstring;
 	end
 	
-	if LOAD_REALMLIST_CHANGER then
-		final = final..DATA_SEPARATOR..REALMLIST_USED..REALMLIST_SEPARATOR;
-		if #REALMLIST_TABLE > 0 then
-			for num,realmlist_data in pairs(REALMLIST_TABLE) do
-				for num2,data in pairs(realmlist_data) do
-					if num == REALMLIST_USED and num2 == 3 then
-						final = final..(accname or "");
-					elseif num == REALMLIST_USED and num2 == 4 then
-						final = final..(pwstring or "");
-					else
-						final = final..data;
-					end
-					if num2 ~= #realmlist_data then
-						final = final..REALMLIST_ACCINFO_SEPARATOR;
-					end
-				end
-				if num ~= #REALMLIST_TABLE then
-					final = final..REALMLIST_ADDRESS_SEPARATOR;
-				end
+	SetSavedAccountName(final);
+end
+
+function SaveRealmLists()
+	local final = ""
+	
+	-- final: global_user;global_pass;current_realmlistindex;realm1_name;realm1_addr;realm1_username;realm1_pw;.....
+	if accname then
+		final = final..accname;
+	end
+	final=final..";"
+	
+	if pwstring then
+		final = final..pwstring;
+	end
+	final=final..";"..REALMLIST_USED..";"
+	realms=''
+	cnt = 0
+	for num,realmlist_data in pairs(REALMLIST_TABLE) do
+		if realmlist_data[1] and realmlist_data[2] then
+			cnt = cnt + 1
+			if realmlist_data[1] then
+				realms=realms..realmlist_data[1]
 			end
+			realms=realms..';'
+			if realmlist_data[2] then 
+				realms=realms..realmlist_data[2]
+			end
+			realms=realms..';'
+			if realmlist_data[3] then
+				realms=realms..realmlist_data[3]
+			end
+			realms=realms..';'
+			if realmlist_data[4] then
+				realms=realms..realmlist_data[4]
+			end
+			realms=realms..';'
 		end
 	end
+	final = final..tostring(cnt)..";"..realms
 	
-	if #final > 255 then
-		final1 = strsub(final, 1, 255)
-		final2 = strsub(final, 256)
-	else
-		final1 = final;
+	written = 0
+	currentIdx = 1
+	final = string.insert(final, tostring(string.len(final)), 0)
+	while(true) do
+		temp = string.sub(final,written, written+240)
+		written = written + 240
+		SetCVar(REALMLIST_STORE_VARS[currentIdx],temp)
+		currentIdx = currentIdx + 1
+		if(temp:len() < 240) then
+			break
+		end
 	end
-	
-	SetSavedAccountName(final1);
-	SetSavedAccountList(final2);
 end
 
 GlueDialogTypes["REMEMBER_PASSWORD"] = {
@@ -107,7 +132,18 @@ function AccountLogin_OnLoad(self)
 end
 
 function AccountLogin_OnShow(self)
-	local savedString = GetSavedAccountName()..GetSavedAccountList()
+	local savedString = ''
+	
+	savedString = GetCVar(REALMLIST_STORE_VARS[1])
+	strlen = 0
+	if savedString ~= nil and savedString ~= "" then
+		strlen = string.match(savedString, "[0-9]*")
+		linecount = 1 + (strlen / 240)
+		for i=2,linecount do
+			savedString = savedString..GetCVar(REALMLIST_STORE_VARS[i])
+		end
+	end
+	savedString = string.gsub(savedString, strlen,"")
 	
 	if ENABLE_WOW_LOGO then
 		AccountLoginLogo:Show();
@@ -115,9 +151,38 @@ function AccountLogin_OnShow(self)
 		AccountLoginLogo:SetPoint(WOW_LOGO_POSITION);
 	end
 	WorldOfWarcraftRating:Hide();
+
+	-- convert realm infos
+	if savedString and savedString~="" then
 	
-	ACCOUNT_NAME_PASSWORD, REALM_INFOS = unpack(string_explode(savedString, DATA_SEPARATOR));
-	local accountName, password = unpack(string_explode(ACCOUNT_NAME_PASSWORD, ACCOUNT_SEPARATOR));
+		-- final: global_user;global_pass;current_realmlistindex;realmcount;realm1_name;realm1_addr;realm1_username;realm1_pw;.....
+		data = string_explode(savedString, ';')
+		accname = data[1]
+		password = data[2]
+		REALMLIST_USED = data[3]
+		realmcount = data[4]
+		local pre = {}
+		for i=0,realmcount do
+			local newData = {
+				data[5+(i*4)],
+				data[6+(i*4)],
+				data[7+(i*4)],
+				data[8+(i*4)],
+			}
+			tinsert(pre, newData)
+		end
+		REALMLIST_TABLE = pre
+	end
+	
+	if REALMLIST_USED and REALMLIST_USED~="" then
+		REALMLIST_USED = tonumber(REALMLIST_USED)
+		if GetCVar("realmList") ~= REALMLIST_TABLE[REALMLIST_USED][1] then
+			SetCVar("realmList", REALMLIST_TABLE[REALMLIST_USED][1])
+			RealmListChangerRealmList:SetText(REALMLIST_TABLE[REALMLIST_USED][1])
+			AccountLoginAccountEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][3] or "")
+			AccountLoginPasswordEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][4] or "")
+		end
+	end
 	
 	AccountLoginAccountEdit:SetText(accountName or "");
 	if ENABLE_SAVE_PASSWORD then
@@ -272,6 +337,7 @@ function AccountLogin_Login()
 		SaveAccountString();
 		SetUsesToken(false);
 	end
+	SaveRealmLists()
 end
 
 function AccountLogin_TOS()

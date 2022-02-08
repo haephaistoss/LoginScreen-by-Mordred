@@ -201,30 +201,6 @@ function RealmListChangerButton_OnShow()
 end
 
 function RealmListChangerButton_OnLoad()
-	-- convert realm infos
-	if REALM_INFOS and REALM_INFOS~="" then
-		REALMLIST_USED, REALMLIST_TABLE = unpack(string_explode(REALM_INFOS, REALMLIST_SEPARATOR))
-
-		if REALMLIST_TABLE and REALMLIST_TABLE~="" then
-			REALMLIST_TABLE = string_explode(REALMLIST_TABLE, REALMLIST_ADDRESS_SEPARATOR)
-			local pre = {}
-			for k,v in pairs(REALMLIST_TABLE) do
-				tinsert(pre, string_explode(v, REALMLIST_ACCINFO_SEPARATOR))
-			end
-			REALMLIST_TABLE = pre
-		else
-			REALMLIST_TABLE = {}
-		end
-		
-		if REALMLIST_USED and REALMLIST_USED~="" then
-			REALMLIST_USED = tonumber(REALMLIST_USED)
-			SetCVar("realmList", REALMLIST_TABLE[REALMLIST_USED][1] or "")
-			AccountLoginAccountEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][3] or "")
-			AccountLoginPasswordEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][4] or "")
-		else
-			REALMLIST_USED = -1
-		end
-	end
 	RealmListChangerRealmList:SetText(GetCVar("realmList"))
 end
 
