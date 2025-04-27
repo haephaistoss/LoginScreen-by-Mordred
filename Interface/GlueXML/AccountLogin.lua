@@ -1,4 +1,3 @@
-
 FADE_IN_TIME = 2;
 DEFAULT_TOOLTIP_COLOR = {0.8, 0.8, 0.8, 0.09, 0.09, 0.09};
 MAX_PIN_LENGTH = 10;
@@ -132,77 +131,63 @@ function AccountLogin_OnLoad(self)
 end
 
 function AccountLogin_OnShow(self)
-	local savedString = ''
-	
-	savedString = GetCVar(REALMLIST_STORE_VARS[1])
-	_strlen = 0
-	if savedString ~= nil and savedString ~= "" then
-		_strlen = string.match(savedString, "[0-9]*")
-		linecount = 1 + (_strlen / 240)
-		for i=2,linecount do
-			savedString = savedString..GetCVar(REALMLIST_STORE_VARS[i])
-		end
-	end
-	savedString = string.gsub(savedString, _strlen,"")
-	
-	if ENABLE_WOW_LOGO then
-		AccountLoginLogo:Show();
-		AccountLoginLogo:ClearAllPoints();
-		AccountLoginLogo:SetPoint(WOW_LOGO_POSITION);
-	end
-	WorldOfWarcraftRating:Hide();
+    local savedString = GetCVar(REALMLIST_STORE_VARS[1])
+    local _strlen = 0
+    if savedString and savedString ~= "" then
+        local len_str = string.match(savedString, "^(%d+)")
+        if len_str then
+            _strlen = tonumber(len_str)
+            local linecount = math.ceil(_strlen / 240)
+            for i = 2, linecount do
+                savedString = savedString .. GetCVar(REALMLIST_STORE_VARS[i])
+            end
+            savedString = string.sub(savedString, #len_str + 1, _strlen + #len_str)
+        end
+    end
 
-	-- convert realm infos
-	if savedString and savedString~="" then
-	
-		-- final: global_user;global_pass;current_realmlistindex;realmcount;realm1_name;realm1_addr;realm1_username;realm1_pw;.....
-		data = string_explode(savedString, ';')
-		accname = data[1]
-		password = data[2]
-		REALMLIST_USED = data[3]
-		realmcount = data[4]
-		local pre = {}
-		for i=0,realmcount do
-			local newData = {
-				data[5+(i*4)],
-				data[6+(i*4)],
-				data[7+(i*4)],
-				data[8+(i*4)],
-			}
-			tinsert(pre, newData)
-		end
-		REALMLIST_TABLE = pre
-	end
-	
-	if REALMLIST_USED and REALMLIST_USED~="" then
-		REALMLIST_USED = tonumber(REALMLIST_USED)
-		if GetCVar("realmList") ~= REALMLIST_TABLE[REALMLIST_USED][1] then
-			SetCVar("realmList", REALMLIST_TABLE[REALMLIST_USED][1])
-			RealmListChangerRealmList:SetText(REALMLIST_TABLE[REALMLIST_USED][1])
-			AccountLoginAccountEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][3] or "")
-			AccountLoginPasswordEdit:SetText(REALMLIST_TABLE[REALMLIST_USED][4] or "")
-		end
-	end
-	
-	AccountLoginAccountEdit:SetText(accountName or "");
-	if ENABLE_SAVE_PASSWORD then
-		AccountLoginPasswordEdit:SetText(password or "");
-		if accountName ~= "" then
-			AccountLoginSavePasswordText:Show();
-			AccountLoginSavePassword:Show();
-			if password ~= "" then
-				AccountLoginSavePassword:SetChecked(1);
-			else
-				AccountLoginSavePassword:SetChecked(0);
-			end
-		else
-			AccountLoginSavePassword:Hide();
-			AccountLoginSavePasswordText:Hide();
-		end
-	else
-		AccountLoginSavePassword:Hide();
-		AccountLoginSavePasswordText:Hide();
-	end
+    -- Parse and fill REALMLIST_TABLE
+    if savedString and savedString ~= "" then
+        local data = string_explode(savedString, ';')
+        REALMLIST_USED = tonumber(data[3])
+        local realmcount = tonumber(data[4]) or 0
+        local pre = {}
+        for i = 0, realmcount - 1 do
+            local newData = {
+                data[5 + (i * 4)],
+                data[6 + (i * 4)],
+                data[7 + (i * 4)],
+                data[8 + (i * 4)],
+            }
+            tinsert(pre, newData)
+        end
+        REALMLIST_TABLE = pre
+    end
+
+    -- Fill UI from selected realm only
+    if REALMLIST_USED and REALMLIST_TABLE and REALMLIST_TABLE[REALMLIST_USED] then
+        local realmData = REALMLIST_TABLE[REALMLIST_USED]
+        SetCVar("realmList", realmData[1] or "")
+        RealmListChangerRealmList:SetText(realmData[1] or "")
+        AccountLoginAccountEdit:SetText(realmData[3] or "")
+        AccountLoginPasswordEdit:SetText(realmData[4] or "")
+        if (realmData[3] and realmData[3] ~= "") then
+            AccountLoginSaveAccountName:SetChecked(1)
+        else
+            AccountLoginSaveAccountName:SetChecked(0)
+        end
+        if ENABLE_SAVE_PASSWORD then
+            if (realmData[4] and realmData[4] ~= "") then
+                AccountLoginSavePassword:SetChecked(1)
+            else
+                AccountLoginSavePassword:SetChecked(0)
+            end
+        end
+    else
+        AccountLoginAccountEdit:SetText("")
+        AccountLoginPasswordEdit:SetText("")
+        AccountLoginSaveAccountName:SetChecked(0)
+        AccountLoginSavePassword:SetChecked(0)
+    end
 
 	-- Try to show the EULA or the TOS
 	AccountLogin_ShowUserAgreements();
@@ -222,12 +207,12 @@ function AccountLogin_OnShow(self)
 		AccountLoginTokenEdit:Hide();
 	end
 	
-	if ( accountName == "" ) then
-		AccountLogin_FocusAccountName();
-		AccountLoginSaveAccountName:SetChecked(0);
+	if (accountName and accountName ~= "") then
+	    AccountLogin_FocusPassword();
+	    AccountLoginSaveAccountName:SetChecked(1);
 	else
-		AccountLogin_FocusPassword();
-		AccountLoginSaveAccountName:SetChecked(1);
+	    AccountLogin_FocusAccountName();
+	    AccountLoginSaveAccountName:SetChecked(0);
 	end
 	
 	if( IsTrialAccount() ) then
@@ -324,20 +309,9 @@ function AccountLogin_OnEvent(event, arg1, arg2, arg3)
 end
 
 function AccountLogin_Login()
-	PlaySound("gsLogin");
-	DefaultServerLogin(AccountLoginAccountEdit:GetText(), AccountLoginPasswordEdit:GetText());
-	
-	if ( AccountLoginSaveAccountName:GetChecked() ) then
-		if ( AccountLoginSavePassword:GetChecked() ) then
-			SaveAccountString(AccountLoginAccountEdit:GetText(), AccountLoginPasswordEdit:GetText());
-		else
-			SaveAccountString(AccountLoginAccountEdit:GetText());
-		end
-	else
-		SaveAccountString();
-		SetUsesToken(false);
-	end
-	SaveRealmLists()
+    PlaySound("gsLogin")
+    -- Do NOT update REALMLIST_TABLE here!
+    DefaultServerLogin(AccountLoginAccountEdit:GetText(), AccountLoginPasswordEdit:GetText())
 end
 
 function AccountLogin_TOS()
@@ -728,6 +702,20 @@ function Cinematics_PlayMovie(self)
 	PlaySound("gsTitleOptionOK");
 	MovieFrame.version = self:GetID();
 	SetGlueScreen("movie");
+end
+
+function RealmListEdit_Save()
+    local idx = REALMLIST_USED
+    if idx and REALMLIST_TABLE and REALMLIST_TABLE[idx] then
+        -- Only update if user wants to save
+        if AccountLoginSaveAccountName:GetChecked() then
+            REALMLIST_TABLE[idx][3] = AccountLoginAccountEdit:GetText()
+        end
+        if ENABLE_SAVE_PASSWORD and AccountLoginSavePassword:GetChecked() then
+            REALMLIST_TABLE[idx][4] = AccountLoginPasswordEdit:GetText()
+        end
+        SaveRealmLists()
+    end
 end
 
 

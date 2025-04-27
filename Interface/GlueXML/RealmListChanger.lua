@@ -1,4 +1,3 @@
-
 if not LOAD_REALMLIST_CHANGER then
 	return
 end
@@ -35,18 +34,26 @@ GlueDialogTypes["DELETE_REALMLIST"] = {
 }
 
 function RealmListChangerButton_Add()
-	RealmListChanger_EditingBackgroundFrame:Show()
-	RealmListChanger_RealmListEditBox:SetFocus()
-	RealmListChanger_RealmListEditBox:SetText("")
-	RealmListChanger_RealmListNameEditBox:SetText("")
-	isEditing = false
+    RealmListChanger_EditingBackgroundFrame:Show()
+    RealmListChanger_RealmListEditBox:SetFocus()
+    RealmListChanger_RealmListEditBox:SetText("")
+    RealmListChanger_RealmListNameEditBox:SetText("")
+    RealmListChanger_AccountNameEditBox:SetText("")
+    RealmListChanger_PasswordEditBox:SetText("")
+    RealmListChanger_ShowPasswordCheck:SetChecked(false)
+    RealmListChanger_PasswordEditBox:SetPassword(true)
+    isEditing = false
 end
 
 function RealmListChangerButton_Edit()
-	RealmListChanger_EditingBackgroundFrame:Show()
-	RealmListChanger_RealmListEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][1])
-	RealmListChanger_RealmListNameEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][2])
-	isEditing = true
+    RealmListChanger_EditingBackgroundFrame:Show()
+    RealmListChanger_RealmListEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][1])
+    RealmListChanger_RealmListNameEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][2])
+    RealmListChanger_AccountNameEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][3] or "")
+    RealmListChanger_PasswordEditBox:SetText(REALMLIST_TABLE[REALMLIST_USED][4] or "")
+    RealmListChanger_ShowPasswordCheck:SetChecked(false)
+    RealmListChanger_PasswordEditBox:SetPassword(true)
+    isEditing = true
 end
 
 function RealmListChangerButton_Delete()
@@ -68,21 +75,23 @@ function RealmListChanger_Editing_Input(self, userInput)
 end
 
 function RealmListChanger_Editing_Okay()
-	if isEditing then
-		REALMLIST_TABLE[REALMLIST_USED][1] = RealmListChanger_RealmListEditBox:GetText()
-		REALMLIST_TABLE[REALMLIST_USED][2] = RealmListChanger_RealmListNameEditBox:GetText()
-	else
-		local newData = {
-			RealmListChanger_RealmListEditBox:GetText(),
-			RealmListChanger_RealmListNameEditBox:GetText(),
-			"",
-			""
-		}
-		tinsert(REALMLIST_TABLE, newData)
-	end
-	
-	RealmListChanger_Editing_Cancel()
-	RealmListChangerUpdate()
+    if isEditing then
+        REALMLIST_TABLE[REALMLIST_USED][1] = RealmListChanger_RealmListEditBox:GetText()
+        REALMLIST_TABLE[REALMLIST_USED][2] = RealmListChanger_RealmListNameEditBox:GetText()
+        REALMLIST_TABLE[REALMLIST_USED][3] = RealmListChanger_AccountNameEditBox:GetText()
+        REALMLIST_TABLE[REALMLIST_USED][4] = RealmListChanger_PasswordEditBox:GetText()
+    else
+        local newData = {
+            RealmListChanger_RealmListEditBox:GetText(),
+            RealmListChanger_RealmListNameEditBox:GetText(),
+            RealmListChanger_AccountNameEditBox:GetText(),
+            RealmListChanger_PasswordEditBox:GetText()
+        }
+        tinsert(REALMLIST_TABLE, newData)
+    end
+
+    RealmListChanger_Editing_Cancel()
+    RealmListChangerUpdate()
 end
 
 function RealmListChanger_Editing_Cancel()
@@ -416,16 +425,82 @@ RealmListChangerFrame = CreateFrame("Frame",nil,RealmListChanger)
 		local RealmListChanger_RealmListNameEditBoxText = RealmListChanger_RealmListNameEditBox:CreateFontString("RealmListChanger_RealmListNameEditBoxText", "OVERLAY", "GlueEditBoxFont")
 			RealmListChanger_RealmListNameEditBoxText:SetPoint("RIGHT", RealmListChanger_RealmListNameEditBox, "LEFT", 0, 3)
 			RealmListChanger_RealmListNameEditBoxText:SetText("(Optional) Name:")
-	RealmListChangerFrame_Editing_CancelButton = CreateFrame("Button",nil,RealmListChanger_EditingBackgroundFrame,"GlueButtonSmallTemplateBlue")
-		RealmListChangerFrame_Editing_CancelButton:SetSize(125,35)
-		RealmListChangerFrame_Editing_CancelButton:SetPoint("TOP", RealmListChanger_RealmListNameEditBox, "BOTTOM", 70,0)
-		RealmListChangerFrame_Editing_CancelButton:SetText("Cancel")
-		RealmListChangerFrame_Editing_CancelButton:SetScript("OnClick", RealmListChanger_Editing_Cancel)
+
+-- Account Name Edit Box
+RealmListChanger_AccountNameEditBox = newRealmListEditBox(RealmListChanger_EditingBackgroundFrame, "RealmListChanger_AccountNameEditBox")
+RealmListChanger_AccountNameEditBox:SetID(3)
+RealmListChanger_AccountNameEditBox:SetPoint("TOP", RealmListChanger_RealmListNameEditBox, "BOTTOM", 0, 0)
+RealmListChanger_AccountNameEditBox:SetScript("OnEnterPressed", RealmListChanger_Editing_Okay)
+RealmListChanger_AccountNameEditBox:SetScript("OnEscapePressed", RealmListChanger_Editing_Cancel)
+local RealmListChanger_AccountNameEditBoxText = RealmListChanger_AccountNameEditBox:CreateFontString("RealmListChanger_AccountNameEditBoxText", "OVERLAY", "GlueEditBoxFont")
+RealmListChanger_AccountNameEditBoxText:SetPoint("RIGHT", RealmListChanger_AccountNameEditBox, "LEFT", 0, 3)
+RealmListChanger_AccountNameEditBoxText:SetText("Account Name:")
+
+-- Password Edit Box
+RealmListChanger_PasswordEditBox = newRealmListEditBox(RealmListChanger_EditingBackgroundFrame, "RealmListChanger_PasswordEditBox")
+RealmListChanger_PasswordEditBox:SetID(4)
+RealmListChanger_PasswordEditBox:SetPoint("TOP", RealmListChanger_AccountNameEditBox, "BOTTOM", 0, 0)
+RealmListChanger_PasswordEditBox:SetScript("OnEnterPressed", RealmListChanger_Editing_Okay)
+RealmListChanger_PasswordEditBox:SetScript("OnEscapePressed", RealmListChanger_Editing_Cancel)
+RealmListChanger_PasswordEditBox:SetMaxLetters(64)
+RealmListChanger_PasswordEditBox:SetPassword(true)
+local RealmListChanger_PasswordEditBoxText = RealmListChanger_PasswordEditBox:CreateFontString("RealmListChanger_PasswordEditBoxText", "OVERLAY", "GlueEditBoxFont")
+RealmListChanger_PasswordEditBoxText:SetPoint("RIGHT", RealmListChanger_PasswordEditBox, "LEFT", 0, 3)
+RealmListChanger_PasswordEditBoxText:SetText("Password:")
+
+-- Show Password Checkbox
+RealmListChanger_ShowPasswordCheck = CreateFrame("CheckButton", "RealmListChanger_ShowPasswordCheck", RealmListChanger_EditingBackgroundFrame)
+RealmListChanger_ShowPasswordCheck:SetSize(24, 24)
+RealmListChanger_ShowPasswordCheck:SetPoint("LEFT", RealmListChanger_PasswordEditBox, "RIGHT", 10, 0)
+
+-- Normal texture
+local normal = RealmListChanger_ShowPasswordCheck:CreateTexture(nil, "BACKGROUND")
+normal:SetAllPoints()
+normal:SetTexture("Interface\\Buttons\\UI-CheckBox-Up")
+RealmListChanger_ShowPasswordCheck:SetNormalTexture(normal)
+
+-- Pushed texture
+local pushed = RealmListChanger_ShowPasswordCheck:CreateTexture(nil, "BACKGROUND")
+pushed:SetAllPoints()
+pushed:SetTexture("Interface\\Buttons\\UI-CheckBox-Down")
+RealmListChanger_ShowPasswordCheck:SetPushedTexture(pushed)
+
+-- Checked texture
+local checked = RealmListChanger_ShowPasswordCheck:CreateTexture(nil, "BACKGROUND")
+checked:SetAllPoints()
+checked:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+RealmListChanger_ShowPasswordCheck:SetCheckedTexture(checked)
+
+-- Highlight texture
+local highlight = RealmListChanger_ShowPasswordCheck:CreateTexture(nil, "BACKGROUND")
+highlight:SetAllPoints()
+highlight:SetTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+RealmListChanger_ShowPasswordCheck:SetHighlightTexture(highlight)
+
+RealmListChanger_ShowPasswordCheck.text = RealmListChanger_ShowPasswordCheck:CreateFontString(nil, "OVERLAY", "GlueFontNormalSmall")
+RealmListChanger_ShowPasswordCheck.text:SetPoint("LEFT", RealmListChanger_ShowPasswordCheck, "RIGHT", 2, 0)
+RealmListChanger_ShowPasswordCheck.text:SetText("Show Password")
+RealmListChanger_ShowPasswordCheck:SetScript("OnClick", function(self)
+    local show = self:GetChecked()
+    RealmListChanger_PasswordEditBox:SetPassword(not show)
+    -- Force refresh the text to update the display
+    local txt = RealmListChanger_PasswordEditBox:GetText()
+    RealmListChanger_PasswordEditBox:SetText("") -- clear
+    RealmListChanger_PasswordEditBox:SetText(txt) -- restore
+end)
+RealmListChanger_ShowPasswordCheck:SetChecked(false)
+RealmListChanger_PasswordEditBox:SetPassword(true)
+
 	RealmListChangerFrame_Editing_OkayButton = CreateFrame("Button",nil,RealmListChanger_EditingBackgroundFrame,"GlueButtonSmallTemplateBlue")
 		RealmListChangerFrame_Editing_OkayButton:SetSize(125,35)
-		RealmListChangerFrame_Editing_OkayButton:SetPoint("TOP", RealmListChanger_RealmListNameEditBox, "BOTTOM", -70,0)
+		RealmListChangerFrame_Editing_OkayButton:SetPoint("TOP", RealmListChanger_PasswordEditBox, "BOTTOM", -70, -20)
 		RealmListChangerFrame_Editing_OkayButton:SetText("Okay")
 		RealmListChangerFrame_Editing_OkayButton:SetScript("OnClick", RealmListChanger_Editing_Okay)
+	RealmListChangerFrame_Editing_CancelButton = CreateFrame("Button",nil,RealmListChanger_EditingBackgroundFrame,"GlueButtonSmallTemplateBlue")
+		RealmListChangerFrame_Editing_CancelButton:SetSize(125,35)
+		RealmListChangerFrame_Editing_CancelButton:SetPoint("TOP", RealmListChanger_PasswordEditBox, "BOTTOM", 70, -20)
+		RealmListChangerFrame_Editing_CancelButton:SetText("Cancel")
+		RealmListChangerFrame_Editing_CancelButton:SetScript("OnClick", RealmListChanger_Editing_Cancel)
 
 RealmListChangerButton = CreateFrame("Button",nil,AccountLogin,"GlueButtonSmallTemplateBlue")
 	RealmListChangerButton:SetText("Realmlist")
